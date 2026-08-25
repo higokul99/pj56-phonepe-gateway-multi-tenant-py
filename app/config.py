@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     MASTER_ENCRYPTION_KEY: str = "8vXQ9c4lC6h3TzWzL9hJ7f3rK1mP5sQ8wY2uI0vE4aM="
 
     # Master Admin API Key for managing tenants and API keys
-    ADMIN_API_KEY: str = "admin_secret_super_secure_key_change_in_production"
+    ADMIN_API_KEY: str = "THIS_IS_ADMIN_API_KEY"
 
     # Rate Limiting
     RATE_LIMIT_PER_MINUTE: int = 120
