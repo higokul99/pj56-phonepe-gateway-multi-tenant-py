@@ -27,7 +27,7 @@ services:
       POSTGRES_PASSWORD: pgpass
       POSTGRES_DB: payment_gateway
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -53,18 +53,18 @@ services:
     networks:
       - pg_network
 
-  # nginx:
-  #   build:
-  #     context: ./docker/nginx
-  #     dockerfile: Dockerfile
-  #   container_name: payment_gateway_nginx
-  #   restart: always
-  #   ports:
-  #     - "8080:80"
-  #   depends_on:
-  #     - app
-  #   networks:
-  #     - pg_network
+  nginx:
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile
+    container_name: payment_gateway_nginx
+    restart: always
+    ports:
+      - "8080:80"
+    depends_on:
+      - app
+    networks:
+      - pg_network
 
 networks:
   pg_network:
