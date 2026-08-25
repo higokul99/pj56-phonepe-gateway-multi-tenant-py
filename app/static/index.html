@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhonePe Payment Gateway — Admin Dashboard</title>
+  
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js for visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Custom Design System Styles -->
+  <link rel="stylesheet" href="/static/css/dashboard.css">
+</head>
+<body>
+
+  <!-- =========================================================================
+       1. Login Section (Shown if unauthenticated)
+       ========================================================================= -->
+  <div id="login-section" class="login-wrapper">
+    <div class="login-card">
+      <div class="brand-badge">PhonePe Multi-Tenant Gateway</div>
+      <h1>Admin Dashboard</h1>
+      <p>Enter your Master Admin API Key to access credentials, merchants, live transactions, and logs.</p>
+      
+      <form id="login-form">
+        <div class="form-group">
+          <label for="admin-key-input">Master Admin API Key</label>
+          <input type="password" id="admin-key-input" class="input-control" placeholder="Enter X-Admin-API-Key" required autofocus autocomplete="off">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Authenticate &rarr;</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       2. Main Dashboard Application (Shown when authenticated)
+       ========================================================================= -->
+  <div id="app-section" class="app-container hidden">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">₹</div>
+        <div>
+          <div class="brand-title">PhonePe PG</div>
+          <div class="brand-subtitle">Control Center</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-item active" data-tab="overview">
+          <span>📊</span> Overview
+        </div>
+        <div class="nav-item" data-tab="tenants">
+          <span>🏢</span> Merchants & Sites
+        </div>
+        <div class="nav-item" data-tab="keys">
+          <span>🔑</span> API Keys
+        </div>
+        <div class="nav-item" data-tab="orders">
+          <span>💳</span> Orders & Transactions
+        </div>
+        <div class="nav-item" data-tab="webhooks">
+          <span>📡</span> Webhook Audit Logs
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button id="btn-logout" class="btn btn-secondary btn-block btn-sm">Sign Out</button>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-wrapper">
+      <!-- Top Header -->
+      <header class="top-header">
+        <h2 id="header-title" class="header-title">Overview</h2>
+        <div class="header-actions">
+          <div class="status-pill">
+            <span class="status-dot"></span> System Healthy
+          </div>
+          <a href="/docs" target="_blank" class="btn btn-sm btn-secondary">API Docs &rarr;</a>
+        </div>
+      </header>
+
+      <!-- Scrollable Content Body -->
+      <main class="content-body">
+        
+        <!-- ==================== TAB 1: OVERVIEW ==================== -->
+        <section id="tab-overview" class="tab-content">
+          <!-- Metric Cards -->
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-title">Total Volume Processed</div>
+              <div id="metric-volume" class="metric-value">₹0.00</div>
+              <div class="metric-subtitle">Across all active merchants</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-title">Total Orders</div>
+              <div id="metric-orders" class="metric-value">0</div>
+              <div class="metric-subtitle">Lifetime checkout requests</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-title">Active Merchants</div>
+              <div id="metric-tenants" class="metric-value">0</div>
+              <div class="metric-subtitle">Connected sites</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-title">Payment Success Rate</div>
+              <div id="metric-success-rate" class="metric-value">100%</div>
+              <div class="metric-subtitle">Settled payments</div>
+            </div>
+          </div>
+
+          <!-- Charts Grid -->
+          <div class="charts-grid">
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">7-Day Processed Volume Trend (₹)</div>
+              </div>
+              <div style="height: 240px; position: relative;">
+                <canvas id="chart-revenue"></canvas>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">Order Status Distribution</div>
+              </div>
+              <div style="height: 240px; position: relative;">
+                <canvas id="chart-status"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Orders Card -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Recent Transactions</div>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Merchant Order ID</th>
+                    <th>Merchant Name</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody id="overview-recent-orders-tbody">
+                  <tr><td colspan="5" class="text-center text-muted">Loading...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== TAB 2: TENANTS ==================== -->
+        <section id="tab-tenants" class="tab-content hidden">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Registered Merchants & Websites</div>
+              <button class="btn btn-sm btn-primary" onclick="openAddTenantModal()">+ Add Merchant</button>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Merchant Display Name</th>
+                    <th>PhonePe MID</th>
+                    <th>Environment</th>
+                    <th>Status</th>
+                    <th>Webhook URL</th>
+                    <th>Webhook Secret</th>
+                    <th class="text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="tenants-tbody">
+                  <tr><td colspan="7" class="text-center text-muted">Loading merchants...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== TAB 3: API KEYS ==================== -->
+        <section id="tab-keys" class="tab-content hidden">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Tenant API Keys</div>
+              <button class="btn btn-sm btn-primary" onclick="openCreateApiKeyModal()">+ Issue API Key</button>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Key Prefix</th>
+                    <th>Merchant</th>
+                    <th>Status</th>
+                    <th>Last Used</th>
+                    <th>Created Date</th>
+                    <th class="text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="keys-tbody">
+                  <tr><td colspan="6" class="text-center text-muted">Loading API keys...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== TAB 4: ORDERS ==================== -->
+        <section id="tab-orders" class="tab-content hidden">
+          <div class="card">
+            <div class="card-header" style="flex-wrap: wrap; gap: 1rem;">
+              <div class="card-title">All Orders & Transactions</div>
+              <div style="display: flex; gap: 0.75rem;">
+                <input type="text" id="orders-search-input" class="input-control" style="width: 220px; padding: 0.4rem 0.75rem;" placeholder="Search Order ID..." oninput="loadOrdersTab()">
+                <select id="orders-status-filter" class="input-control" style="width: 140px; padding: 0.4rem 0.75rem;" onchange="loadOrdersTab()">
+                  <option value="">All Statuses</option>
+                  <option value="COMPLETED">Completed</option>
+                  <option value="PENDING">Pending</option>
+                  <option value="FAILED">Failed</option>
+                </select>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Merchant Order ID</th>
+                    <th>PhonePe Order ID</th>
+                    <th>Merchant</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th class="text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="orders-tbody">
+                  <tr><td colspan="7" class="text-center text-muted">Loading orders...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== TAB 5: WEBHOOKS ==================== -->
+        <section id="tab-webhooks" class="tab-content hidden">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Webhook Activity Log</div>
+              <button class="btn btn-sm btn-secondary" onclick="loadWebhooksTab()">Refresh</button>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Source</th>
+                    <th>Event Type</th>
+                    <th>Status</th>
+                    <th>HTTP Response</th>
+                    <th>Received At</th>
+                    <th class="text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="webhooks-tbody">
+                  <tr><td colspan="6" class="text-center text-muted">Loading webhook logs...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       3. Modals
+       ========================================================================= -->
+
+  <!-- Modal: Add Tenant -->
+  <div id="modal-add-tenant" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">Onboard New Merchant</h3>
+        <button class="modal-close" onclick="closeModal('modal-add-tenant')">&times;</button>
+      </div>
+      <form id="form-add-tenant" onsubmit="handleCreateTenantSubmit(event)">
+        <div class="modal-body">
+          <div class="notice-box">
+            🔒 Client secret is encrypted at rest using Fernet before database storage.
+          </div>
+          <div class="form-group">
+            <label>Merchant / Site Display Name *</label>
+            <input type="text" id="tenant-name" class="input-control" placeholder="e.g. Career Portal Gecnoguru" required>
+          </div>
+          <div class="form-group">
+            <label>PhonePe Merchant ID (MID) *</label>
+            <input type="text" id="tenant-merchant-id" class="input-control" placeholder="e.g. PGTESTPAYUAT or LIVE_MID" required>
+          </div>
+          <div class="form-group">
+            <label>PhonePe OAuth Client ID *</label>
+            <input type="text" id="tenant-client-id" class="input-control" placeholder="PhonePe OAuth Client ID" required>
+          </div>
+          <div class="form-group">
+            <label>PhonePe OAuth Client Secret *</label>
+            <input type="password" id="tenant-client-secret" class="input-control" placeholder="PhonePe OAuth Client Secret" required>
+          </div>
+          <div class="form-group">
+            <label>PhonePe Environment *</label>
+            <select id="tenant-env" class="input-control">
+              <option value="sandbox">Sandbox (Testing / UAT)</option>
+              <option value="production">Production (Live)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Tenant Webhook URL (Optional)</label>
+            <input type="url" id="tenant-webhook-url" class="input-control" placeholder="https://yoursite.com/api/payment/webhook">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modal-add-tenant')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save & Register</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Edit Tenant -->
+  <div id="modal-edit-tenant" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">Edit Merchant Settings</h3>
+        <button class="modal-close" onclick="closeModal('modal-edit-tenant')">&times;</button>
+      </div>
+      <form id="form-edit-tenant" onsubmit="handleEditTenantSubmit(event)">
+        <input type="hidden" id="edit-tenant-id">
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Merchant Display Name</label>
+            <input type="text" id="edit-tenant-name" class="input-control" required>
+          </div>
+          <div class="form-group">
+            <label>PhonePe Merchant ID (MID)</label>
+            <input type="text" id="edit-tenant-merchant-id" class="input-control" required>
+          </div>
+          <div class="form-group">
+            <label>Rotate Client ID (Leave blank to keep existing)</label>
+            <input type="text" id="edit-tenant-client-id" class="input-control" placeholder="New Client ID">
+          </div>
+          <div class="form-group">
+            <label>Rotate Client Secret (Leave blank to keep existing)</label>
+            <input type="password" id="edit-tenant-client-secret" class="input-control" placeholder="New Client Secret">
+          </div>
+          <div class="form-group">
+            <label>PhonePe Environment</label>
+            <select id="edit-tenant-env" class="input-control">
+              <option value="sandbox">Sandbox</option>
+              <option value="production">Production</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Tenant Webhook URL</label>
+            <input type="url" id="edit-tenant-webhook-url" class="input-control">
+          </div>
+          <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem;">
+            <input type="checkbox" id="edit-tenant-active" style="width: 18px; height: 18px;">
+            <label for="edit-tenant-active" style="margin: 0; cursor: pointer;">Active (Accepting Payments)</label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modal-edit-tenant')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Update Merchant</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Create API Key -->
+  <div id="modal-create-key" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">Issue API Key</h3>
+        <button class="modal-close" onclick="closeModal('modal-create-key')">&times;</button>
+      </div>
+      
+      <form id="form-create-key" onsubmit="handleCreateApiKeySubmit(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Select Merchant / Tenant *</label>
+            <select id="new-key-tenant-select" class="input-control" required></select>
+          </div>
+          <div class="form-group">
+            <label>Key Environment Tag *</label>
+            <select id="new-key-env-select" class="input-control">
+              <option value="live">Live (pg_live_...)</option>
+              <option value="test">Test (pg_test_...)</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modal-create-key')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Generate Key</button>
+        </div>
+      </form>
+
+      <!-- Key Generated Result Display (Shown Once) -->
+      <div id="key-created-result" class="modal-body hidden">
+        <div class="notice-box notice-box-success">
+          ⚠️ <strong>Store this API key immediately!</strong> For security reasons, the raw key is never stored in plaintext and will <strong>NEVER</strong> be shown again.
+        </div>
+        <div class="form-group">
+          <label>Generated API Key</label>
+          <div style="display: flex; gap: 0.5rem;">
+            <div id="displayed-raw-key" class="input-control mono-text" style="user-select: all; overflow-x: auto; background: #000;"></div>
+            <button type="button" id="btn-copy-raw-key" class="btn btn-primary btn-sm">Copy</button>
+          </div>
+        </div>
+        <div class="modal-footer" style="padding-right: 0; padding-bottom: 0;">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modal-create-key')">Done</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Modal: Trigger Refund -->
+  <div id="modal-refund" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">Initiate PhonePe Refund</h3>
+        <button class="modal-close" onclick="closeModal('modal-refund')">&times;</button>
+      </div>
+      <form id="form-refund" onsubmit="handleRefundSubmit(event)">
+        <input type="hidden" id="refund-order-id">
+        <input type="hidden" id="refund-tenant-id">
+        <div class="modal-body">
+          <div class="notice-box">
+            This will call PhonePe's Refund API to return funds to the customer's payment source.
+          </div>
+          <div class="form-group">
+            <label id="refund-amount-label">Refund Amount (in Paise)</label>
+            <input type="number" id="refund-amount" class="input-control" required min="100">
+          </div>
+          <div class="form-group">
+            <label>Reason for Refund</label>
+            <input type="text" id="refund-reason" class="input-control" value="Customer cancellation / return" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modal-refund')">Cancel</button>
+          <button type="submit" class="btn btn-danger">Execute Refund</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: JSON Inspector -->
+  <div id="modal-inspector" class="modal-backdrop">
+    <div class="modal-dialog" style="max-width: 680px;">
+      <div class="modal-header">
+        <h3 id="inspector-title" class="modal-title">JSON Inspector</h3>
+        <button class="modal-close" onclick="closeModal('modal-inspector')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <pre id="inspector-code" class="mono-text" style="background: #090d16; padding: 1rem; border-radius: 8px; overflow-x: auto; max-height: 400px; font-size: 0.8rem; color: #a5b4fc;"></pre>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-inspector')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Script logic -->
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

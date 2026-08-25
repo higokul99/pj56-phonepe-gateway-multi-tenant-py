@@ -152,7 +152,33 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
     )
 
 
+from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
+import os
+
+# Mount static assets directory
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+if os.path.exists(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir, html=True), name="static")
+
+
+@app.get("/", include_in_schema=False)
+async def root_redirect():
+    return RedirectResponse(url="/dashboard")
+
+
+@app.get("/dashboard", include_in_schema=False)
+async def dashboard_page():
+    return RedirectResponse(url="/static/index.html")
+
+
+@app.get("/admin", include_in_schema=False)
+async def admin_page():
+    return RedirectResponse(url="/static/index.html")
+
+
 # --- Register Routers ---
 app.include_router(health_router)
 app.include_router(api_v1_router)
 app.include_router(admin_router)
+
